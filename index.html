@@ -14,7 +14,7 @@
 
 <main>
     <section class="products" id="products">
-        <!-- Products will be loaded here from localStorage -->
+        <!-- Products will load dynamically -->
     </section>
 </main>
 
@@ -22,29 +22,40 @@
     <p>&copy; 2026 TV Stands & Coffee Tables</p>
 </footer>
 
-<script>
-// Load products from localStorage
-let products = JSON.parse(localStorage.getItem('products')) || [];
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
-// Function to render products
-function renderProducts() {
-    const container = document.getElementById('products');
+// Firebase config
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const container = document.getElementById('products');
+
+async function loadProducts() {
+    const querySnapshot = await getDocs(collection(db, "products"));
     container.innerHTML = '';
-    products.forEach(p => {
+    querySnapshot.forEach(doc => {
+        const p = doc.data();
         container.innerHTML += `
         <div class="product">
             <img src="${p.image}" alt="${p.name}">
             <h2>${p.name}</h2>
             <p class="price">KSh ${p.price}</p>
             <a href="${p.whatsapp}" target="_blank" class="buy-btn">Order on WhatsApp</a>
-        </div>
-        `;
+        </div>`;
     });
 }
 
-// Initial render
-renderProducts();
+loadProducts();
 </script>
-
 </body>
 </html>

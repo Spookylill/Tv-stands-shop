@@ -8,71 +8,120 @@
 </head>
 <body>
 
+<script>
+let password = prompt("Enter admin password:");
+if(password !== "admin123"){
+    alert("Access denied!");
+    window.location.href = "index.html";
+}
+</script>
+
 <header>
     <h1>Admin Panel</h1>
 </header>
 
 <main>
-    <form id="productForm">
-        <label>Product Name:</label>
-        <input type="text" id="name" required>
+<form id="productForm">
+    <input type="text" id="name" placeholder="Product Name" required>
+    <input type="number" id="price" placeholder="Price (KSh)" required>
+    <input type="file" id="imageFile" accept="image/*" required>
+    <input type="text" id="whatsapp" placeholder="WhatsApp Link" required>
+    <button type="submit">Add Product</button>
+</form>
 
-        <label>Price (KSh):</label>
-        <input type="number" id="price" required>
-
-        <label>Image URL (or relative path in images/ folder):</label>
-        <input type="text" id="image" placeholder="images/chair1.jpg" required>
-
-        <label>WhatsApp Link:</label>
-        <input type="text" id="whatsapp" placeholder="https://wa.me/254700000000" required>
-
-        <button type="submit">Add Product</button>
-    </form>
-
-    <h2>Existing Products</h2>
-    <ul id="productList"></ul>
+<section id="productList">
+    <!-- Products with edit/delete will appear here -->
+</section>
 </main>
 
 <footer>
-    <p>&copy; 2026 TV Stands & Coffee Tables - Admin</p>
+<p>&copy; 2026 TV Stands & Coffee Tables - Admin</p>
 </footer>
 
-<script>
-// Get products from localStorage or create empty array
-let products = JSON.parse(localStorage.getItem('products')) || [];
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js";
 
-// Display existing products
-function renderList() {
-    const list = document.getElementById('productList');
-    list.innerHTML = '';
-    products.forEach((p, index) => {
-        list.innerHTML += `<li>${p.name} - KSh ${p.price} <button onclick="deleteProduct(${index})">Delete</button></li>`;
+// Firebase config
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const form = document.getElementById('productForm');
+const productList = document.getElementById('productList');
+
+async function loadProducts(){
+    productList.innerHTML = '';
+    const querySnapshot = await getDocs(collection(db, "products"));
+    querySnapshot.forEach(docSnap => {
+        const p = docSnap.data();
+        const id = docSnap.id;
+        productList.innerHTML += `
+        <div class="product">
+            <img src="${p.image}" alt="${p.name}" style="width:100px">
+            <h2>${p.name}</h2>
+            <p>KSh ${p.price}</p>
+            <a href="${p.whatsapp}" target="_blank" class="buy-btn">WhatsApp</a>
+            <button class="edit-btn" onclick="editProduct('${id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteProduct('${id}', '${p.image}')">Delete</button>
+        </div>`;
     });
 }
-renderList();
 
-// Add new product
-document.getElementById('productForm').addEventListener('submit', function(e){
+form.addEventListener('submit', async e => {
     e.preventDefault();
     const name = document.getElementById('name').value;
     const price = document.getElementById('price').value;
-    const image = document.getElementById('image').value;
     const whatsapp = document.getElementById('whatsapp').value;
+    const imageFile = document.getElementById('imageFile').files[0];
+    if(!imageFile) return alert("Select an image!");
 
-    products.push({name, price, image, whatsapp});
-    localStorage.setItem('products', JSON.stringify(products));
+    const storageRef = ref(storage, 'images/' + imageFile.name);
+    await uploadBytes(storageRef, imageFile);
+    const imageURL = await getDownloadURL(storageRef);
 
-    renderList();
-    this.reset();
+    await addDoc(collection(db, "products"), {
+        name, price, whatsapp, image: imageURL
+    });
+
+    alert("Product added!");
+    form.reset();
+    loadProducts();
 });
 
-// Delete product
-function deleteProduct(index) {
-    products.splice(index, 1);
-    localStorage.setItem('products', JSON.stringify(products));
-    renderList();
-}
-</script>
+window.deleteProduct = async (id, imageUrl) => {
+    if(confirm("Delete this product?")){
+        await deleteDoc(doc(db, "products", id));
+        // delete image from storage
+        const imgRef = ref(storage, imageUrl);
+        await deleteObject(imgRef).catch(()=>{});
+        loadProducts();
+    }
+};
 
+window.editProduct = async (id) => {
+    const docSnap = await getDocs(collection(db, "products"));
+    const productDoc = doc(db, "products", id);
+    const name = prompt("New name:");
+    const price = prompt("New price:");
+    const whatsapp = prompt("New WhatsApp link:");
+    if(name && price && whatsapp){
+        await updateDoc(productDoc, {name, price, whatsapp});
+        loadProducts();
+    }
+};
+
+loadProducts();
+</script>
 </body>
 </html>

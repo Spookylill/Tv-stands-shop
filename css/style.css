@@ -1,4 +1,4 @@
-/* General Reset */
+/* Reset */
 * {
     margin: 0;
     padding: 0;
@@ -21,6 +21,7 @@ h1 {
     color: #333;
 }
 
+/* Products grid */
 .products {
     display: flex;
     flex-wrap: wrap;
@@ -35,6 +36,7 @@ h1 {
     width: 250px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    position: relative;
 }
 
 .product img {
@@ -54,18 +56,24 @@ h2 {
     color: #007BFF;
 }
 
-.buy-btn {
+.buy-btn, .delete-btn, .edit-btn {
     text-decoration: none;
-    background: #28a745;
-    color: #fff;
-    padding: 10px 15px;
+    padding: 8px 12px;
     border-radius: 5px;
+    color: #fff;
+    margin: 3px;
+    font-size: 0.9rem;
     display: inline-block;
 }
 
-.buy-btn:hover {
-    background: #218838;
-}
+.buy-btn { background: #28a745; }
+.buy-btn:hover { background: #218838; }
+
+.delete-btn { background: #dc3545; }
+.delete-btn:hover { background: #b02a37; }
+
+.edit-btn { background: #ffc107; color: #000; }
+.edit-btn:hover { background: #e0a800; }
 
 footer {
     text-align: center;
@@ -74,7 +82,27 @@ footer {
     font-size: 0.9rem;
 }
 
-/* Responsive for mobile */
+/* Admin panel form */
+form {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    margin: 0 auto 20px auto;
+    gap: 10px;
+}
+
+form input, form button {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+form button {
+    cursor: pointer;
+}
+
+/* Responsive */
 @media (max-width: 600px) {
     .products {
         flex-direction: column;
