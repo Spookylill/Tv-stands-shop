@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TV Stands & Coffee Tables</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+}
+header {
+    background: #ffffff;
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+}
+.form-container, .product {
+    background: #ffffff;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 10px;
+}
+.products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
+    padding: 15px;
+}
+.product img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+.price {
+    color: green;
+    font-weight: bold;
+    margin: 6px 0;
+}
+button {
+    padding: 10px;
+    width: 100%;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.add {
+    background: #25D366;
+    color: #ffffff;
+}
+.delete {
+    background: #e74c3c;
+    color: #ffffff;
+}
+.whatsapp {
+    display: block;
+    background: #25D366;
+    color: #ffffff;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>TV Stands & Coffee Tables</header>
+
+<!-- ADMIN FORM -->
+<div class="form-container" id="adminForm">
+    <input type="file" id="image"><br><br>
+    <input type="text" id="name" placeholder="Product name"><br><br>
+    <input type="number" id="price" placeholder="Price e.g. 6500"><br><br>
+    <button type="button" class="add" onclick="addProduct()">Add Product</button>
+</div>
+
+<!-- PRODUCTS -->
+<div class="products" id="products"></div>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+// 🔹 FIREBASE CONFIG (YOURS)
+const firebaseConfig = {
+    apiKey: "AIzaSyC_V_i7KQyXiWHjgj4WIZf-er9s90tU7Ns",
+    authDomain: "tv-stands-and-coffee-shop.firebaseapp.com",
+    projectId: "tv-stands-and-coffee-shop",
+    storageBucket: "tv-stands-and-coffee-shop.appspot.com",
+    messagingSenderId: "2365747208",
+    appId: "1:2365747208:web:d5df5a564a3275b2da61bd"
+};
+
+// INIT FIREBASE
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// SETTINGS
+const whatsappNumber = "254780810327";
+const isAdmin = new URLSearchParams(window.location.search).has("admin");
+
+// HIDE ADMIN FORM FROM CUSTOMERS
+if (!isAdmin) {
+    document.getElementById("adminForm").style.display = "none";
+}
+
+// LOAD PRODUCTS IN REAL TIME
+db.collection("products").onSnapshot(snapshot => {
+    const productsDiv = document.getElementById("products");
+    productsDiv.innerHTML = "";
+
+    snapshot.forEach(doc => {
+        renderProduct(doc.id, doc.data());
+    });
+});
+
+// ADD PRODUCT FUNCTION
+function addProduct() {
+    const imageInput = document.getElementById("image");
+    const nameInput = document.getElementById("name");
+    const priceInput = document.getElementById("price");
+
+    if (!imageInput.files.length) {
+        alert("Please select an image");
+        return;
+    }
+
+    const file = imageInput.files[0];
+    const name = nameInput.value.trim();
+    const price = priceInput.value.trim();
+
+    if (!name || !price) {
+        alert("Fill all fields");
+        return;
+    }
+
+    const storageRef = storage.ref("products/" + Date.now() + "_" + file.name);
+
+    storageRef.put(file)
+        .then(snapshot => snapshot.ref.getDownloadURL())
+        .then(url => {
+            return db.collection("products").add({
+                name: name,
+                price: "KSh " + Number(price).toLocaleString(),
+                image: url
+            });
+        })
+        .then(() => {
+            alert("Product added successfully");
+            imageInput.value = "";
+            nameInput.value = "";
+            priceInput.value = "";
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Upload failed. Check console.");
+        });
+}
+
+// DISPLAY PRODUCT
+function renderProduct(id, product) {
+    const div = document.createElement("div");
+    div.className = "product";
+
+    div.innerHTML = `
+        <img src="${product.image}">
+        <h4>${product.name}</h4>
+        <div class="price">${product.price}</div>
+        <a class="whatsapp"
+           target="_blank"
+           href="https://wa.me/${whatsappNumber}?text=Hello,%20I%20want%20${encodeURIComponent(product.name)}">
+           Order on WhatsApp
+        </a>
+        ${isAdmin ? `<button class="delete">Delete</button>` : ""}
+    `;
+
+    if (isAdmin) {
+        div.querySelector(".delete").onclick = () => {
+            db.collection("products").doc(id).delete();
+        };
+    }
+
+    document.getElementById("products").appendChild(div);
+}
+</script>
+
+</body>
+</html>
