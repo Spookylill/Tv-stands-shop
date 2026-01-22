@@ -3,31 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel - TV Stands Shop</title>
+<title>Admin Panel - TV Stands</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <script>
-let password = prompt("Enter admin password:");
-if(password !== "admin123"){
-    alert("Access denied!");
+const pass = prompt("Enter admin password:");
+if (pass !== "admin123") {
+    alert("Access denied");
     window.location.href = "index.html";
 }
 </script>
 
 <header>
-    <h1>Admin Panel</h1>
+<h1>Admin Panel</h1>
 </header>
 
 <main>
-<form id="adminSettingsForm">
-    <input type="text" id="globalWhatsApp" placeholder="https://wa.me/254780810327
-" required>
+
+<form id="settingsForm">
+    <input type="text" id="whatsappNumber" placeholder="WhatsApp number (0780810327)" required>
     <button type="submit">Save WhatsApp Number</button>
 </form>
-
-<hr>
 
 <form id="productForm">
     <input type="text" id="name" placeholder="Product Name" required>
@@ -36,101 +34,98 @@ if(password !== "admin123"){
     <button type="submit">Add Product</button>
 </form>
 
-<section id="productList">
-    <!-- Existing products will load here -->
-</section>
+<div id="productList" class="products"></div>
+
 </main>
 
 <footer>
-<p>&copy; 2026 TV Stands & Coffee Tables - Admin</p>
+<p>&copy; 2026 TV Stands Shop - Admin</p>
 </footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, setDoc, getDoc }
+from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
+from "https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js";
 
-// Firebase config
+/* 🔴 PUT YOUR REAL FIREBASE DETAILS HERE */
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT.firebaseapp.com",
     projectId: "YOUR_PROJECT_ID",
     storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-let globalWhatsApp = "";
-
-// Save WhatsApp number
-document.getElementById('adminSettingsForm').addEventListener('submit', (e)=>{
+/* SAVE WHATSAPP */
+document.getElementById("settingsForm").addEventListener("submit", async e => {
     e.preventDefault();
-    globalWhatsApp = document.getElementById('globalWhatsApp').value;
-    alert("WhatsApp number saved! It will be used for all new products.");
+    let num = document.getElementById("whatsappNumber").value;
+    num = num.replace(/^0/, "254");
+    await setDoc(doc(db, "settings", "whatsapp"), { number: num });
+    alert("WhatsApp number saved");
 });
 
-// Add Product
-const form = document.getElementById('productForm');
-const productList = document.getElementById('productList');
-
-form.addEventListener('submit', async e => {
+/* ADD PRODUCT */
+document.getElementById("productForm").addEventListener("submit", async e => {
     e.preventDefault();
-    if(!globalWhatsApp){
-        return alert("Enter the WhatsApp number first!");
-    }
 
-    const name = document.getElementById('name').value;
-    const price = document.getElementById('price').value;
-    const imageFile = document.getElementById('imageFile').files[0];
+    const name = document.getElementById("name").value;
+    const price = document.getElementById("price").value;
+    const image = document.getElementById("imageFile").files[0];
 
-    if(!imageFile) return alert("Select an image!");
+    const wsDoc = await getDoc(doc(db, "settings", "whatsapp"));
+    if (!wsDoc.exists()) return alert("Save WhatsApp number first!");
 
-    const storageRef = ref(storage, 'images/' + imageFile.name);
-    await uploadBytes(storageRef, imageFile);
-    const imageURL = await getDownloadURL(storageRef);
+    const whatsapp = wsDoc.data().number;
+    const imgRef = ref(storage, "products/" + Date.now() + image.name);
+    await uploadBytes(imgRef, image);
+    const imgURL = await getDownloadURL(imgRef);
 
     await addDoc(collection(db, "products"), {
         name,
         price,
-        whatsapp: globalWhatsApp,
-        image: imageURL
+        image: imgURL,
+        whatsapp
     });
 
-    alert("Product added successfully!");
-    form.reset();
+    alert("Product added");
     loadProducts();
 });
 
-// Load Products
-async function loadProducts(){
-    productList.innerHTML = '';
-    const querySnapshot = await getDocs(collection(db, "products"));
-    querySnapshot.forEach(docSnap => {
-        const p = docSnap.data();
-        const id = docSnap.id;
+/* LOAD PRODUCTS */
+async function loadProducts() {
+    productList.innerHTML = "";
+    const data = await getDocs(collection(db, "products"));
+    data.forEach(d => {
+        const p = d.data();
         productList.innerHTML += `
         <div class="product">
-            <img src="${p.image}" alt="${p.name}" style="width:100px">
+            <img src="${p.image}">
             <h2>${p.name}</h2>
-            <p>KSh ${p.price}</p>
-            <a href="${p.whatsapp}" target="_blank" class="buy-btn">WhatsApp</a>
-            <button class="delete-btn" onclick="deleteProduct('${id}','${p.image}')">Delete</button>
+            <div class="price">KSh ${p.price}</div>
+            <a class="buy-btn" target="_blank"
+               href="https://wa.me/${p.whatsapp}?text=Hello I want ${p.name}">
+               WhatsApp
+            </a>
+            <button class="delete-btn"
+                onclick="deleteProduct('${d.id}','${p.image}')">
+                Delete
+            </button>
         </div>`;
     });
 }
 
-// Delete Product
-window.deleteProduct = async (id, imageUrl)=>{
-    if(confirm("Delete this product?")){
-        await deleteDoc(doc(db, "products", id));
-        const imgRef = ref(storage, imageUrl);
-        await deleteObject(imgRef).catch(()=>{});
-        loadProducts();
-    }
+window.deleteProduct = async (id, img) => {
+    await deleteDoc(doc(db, "products", id));
+    await deleteObject(ref(storage, img)).catch(()=>{});
+    loadProducts();
 };
 
 loadProducts();

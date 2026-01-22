@@ -3,59 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TV Stands & Coffee Tables</title>
+<title>TV Stands for Sale</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <header>
-    <h1>TV Stands & Coffee Tables</h1>
+<h1>TV Stands for Sale</h1>
+<p>Quality • Affordable • Order on WhatsApp</p>
 </header>
 
-<main>
-    <section class="products" id="products">
-        <!-- Products will load dynamically -->
-    </section>
-</main>
+<div id="products" class="products"></div>
 
 <footer>
-    <p>&copy; 2026 TV Stands & Coffee Tables</p>
+<p>Contact us on WhatsApp</p>
 </footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs }
+from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
-// Firebase config
+/* SAME FIREBASE CONFIG */
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT.firebaseapp.com",
     projectId: "YOUR_PROJECT_ID",
     storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const container = document.getElementById('products');
 
-async function loadProducts() {
-    const querySnapshot = await getDocs(collection(db, "products"));
-    container.innerHTML = '';
-    querySnapshot.forEach(doc => {
-        const p = doc.data();
+async function loadProducts(){
+    const container = document.getElementById("products");
+    const data = await getDocs(collection(db, "products"));
+    data.forEach(d => {
+        const p = d.data();
         container.innerHTML += `
         <div class="product">
-            <img src="${p.image}" alt="${p.name}">
+            <img src="${p.image}">
             <h2>${p.name}</h2>
-            <p class="price">KSh ${p.price}</p>
-            <a href="${p.whatsapp}" target="_blank" class="buy-btn">Order on WhatsApp</a>
+            <div class="price">KSh ${p.price}</div>
+            <a class="buy-btn" target="_blank"
+               href="https://wa.me/${p.whatsapp}?text=Hello I want ${p.name}">
+               Order on WhatsApp
+            </a>
         </div>`;
     });
 }
-
 loadProducts();
 </script>
+
 </body>
 </html>
